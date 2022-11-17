@@ -1,5 +1,6 @@
 #include "window.h"
 
+#include "assert_s.h"
 #include "logging.h"
 #include "renderer.h"
 
@@ -18,7 +19,8 @@ static bool resized = false;
 static void error_callback(int err, const char *desc) {
 	errout("GLFW error %d: %s\n", err, desc);
 }
-static void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+static void framebuffer_size_callback(GLFWwindow *_window, int width, int height) {
+	assert_s(window == _window && "[framebuffer_size_callback] _window unrecognised");
 	window_width = width;
 	window_height = height;
 	resized = true;
@@ -50,7 +52,7 @@ int window_init(int width, int height, const char *title) {
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	if (renderer_init(width, height)) {
+	if (renderer_init()) {
 		errout("Failed to initialize render engine.\n");
 		glfwTerminate();
 		return -1;
@@ -58,17 +60,15 @@ int window_init(int width, int height, const char *title) {
 
 	window_width = width;
 	window_height = height;
-	resized = false;
+	resized = true;
 
 	return 0;
 }
 
 void window_deinit(void) {
-	if (window) {
-		glfwDestroyWindow(window);
-		window = NULL;
-	}
-	else warnout("window == NULL\n");
+	renderer_deinit();
+	glfwDestroyWindow(window);
+	window = NULL;
 	glfwTerminate();
 }
 

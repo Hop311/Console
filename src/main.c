@@ -2,6 +2,7 @@
 
 #include "window.h"
 #include "logging.h"
+#include "memory_s.h"
 
 #include "character.h"
 
@@ -18,5 +19,6 @@ int main() {
 	if (ret) return ret;
 	window_loop(tick, render);
 	window_deinit();
+	check_memory_leaks();
 	return 0;
 }
