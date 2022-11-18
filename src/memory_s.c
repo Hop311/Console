@@ -11,7 +11,7 @@ static int free_count = 0;
 
 void *malloc_s(size_t size) {
 	if (size == 0) {
-		warnout("size 0 request\n");
+		warnout("size 0 request");
 		return 0;
 	}
 	void *ret = malloc(size);
@@ -21,7 +21,7 @@ void *malloc_s(size_t size) {
 }
 void *calloc_s(size_t size) {
 	if (size == 0) {
-		warnout("size 0 request\n");
+		warnout("size 0 request");
 		return 0;
 	}
 	void *ret = calloc(size, 1);
@@ -32,14 +32,14 @@ void *calloc_s(size_t size) {
 void *realloc_s(void *ptr, size_t size) {
 	if (size == 0) {
 		free_s(ptr);
-		warnout("size 0 request\n");
+		warnout("size 0 request");
 		return 0;
 	}
 	void *ret = realloc(ptr, size);
 	assert_s(ret && "[realloc_s] realloc failed");
 	if (ptr) realloc_count++;
 	else {
-		//dbgout("ptr == 0\n");
+		//dbgout("ptr == 0");
 		malloc_count++;
 	}
 	return ret;
@@ -52,6 +52,6 @@ void free_s(void *ptr) {
 }
 
 void check_memory_leaks(void) {
-	dbgout("malloc_count = %d, realloc_count = %d, free_count = %d\n", malloc_count, realloc_count, free_count);
-	dbgout("malloc_count - free_count = %d\n", malloc_count - free_count);
+	dbgout("malloc_count = %d, realloc_count = %d, free_count = %d", malloc_count, realloc_count, free_count);
+	dbgout("malloc_count - free_count = %d", malloc_count - free_count);
 }

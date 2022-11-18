@@ -18,7 +18,7 @@ link_directories("GL/lib")
 
 # Add C headers and sources
 include_directories("src")
-set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c")
+set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c" "src/gltools.c")
 
 # Generate shader headers
 include_directories("shader/include")

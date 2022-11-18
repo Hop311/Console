@@ -17,7 +17,7 @@ static int window_width = 0, window_height = 0;
 static bool resized = false;
 
 static void error_callback(int err, const char *desc) {
-	errout("GLFW error %d: %s\n", err, desc);
+	errout("GLFW error %d: %s", err, desc);
 }
 static void framebuffer_size_callback(GLFWwindow *_window, int width, int height) {
 	assert_s(window == _window && "[framebuffer_size_callback] _window unrecognised");
@@ -28,12 +28,12 @@ static void framebuffer_size_callback(GLFWwindow *_window, int width, int height
 
 int window_init(int width, int height, const char *title) {
 	if (window) {
-		errout("Window already created.\n");
+		errout("window already created");
 		return -1;
 	}
 	glfwSetErrorCallback(error_callback);
 	if (!glfwInit()) {
-		errout("Failed to initialise GLFW.\n");
+		errout("failed to initialise GLFW");
 		return -1;
 	}
 
@@ -44,7 +44,7 @@ int window_init(int width, int height, const char *title) {
 	window = glfwCreateWindow(width, height, title, NULL, NULL);
 
 	if (!window) {
-		errout("Failed to open GLFW window.\n");
+		errout("failed to open GLFW window");
 		glfwTerminate();
 		return -1;
 	}
@@ -52,15 +52,17 @@ int window_init(int width, int height, const char *title) {
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	if (renderer_init()) {
-		errout("Failed to initialize render engine.\n");
-		glfwTerminate();
-		return -1;
-	}
-
 	window_width = width;
 	window_height = height;
 	resized = true;
+
+	dbgout("GLFW setup complete");
+
+	if (renderer_init()) {
+		errout("failed to initialize render engine");
+		glfwTerminate();
+		return -1;
+	}
 
 	return 0;
 }
@@ -70,11 +72,13 @@ void window_deinit(void) {
 	glfwDestroyWindow(window);
 	window = NULL;
 	glfwTerminate();
+
+	dbgout("GLFW cleanup complete");
 }
 
 void window_loop(TickFunction tick, RenderFunction render) {
 	if (!window) {
-		errout("window not yet initialised.\n");
+		errout("window not yet initialised");
 		return;
 	}
 
@@ -118,7 +122,7 @@ void window_loop(TickFunction tick, RenderFunction render) {
 			tps_display = tick_count;
 			frame_count = 0;
 			tick_count = 0;
-			dbgout("FPS: %zu, TPS: %zu\n", fps_display, tps_display);
+			dbgout("FPS: %zu, TPS: %zu", fps_display, tps_display);
 		}
 		last_loop = current_time;
 	}

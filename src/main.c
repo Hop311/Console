@@ -6,19 +6,21 @@
 
 #include "character.h"
 
-void tick() {
+void tick(void) {
 
 }
 
-void render() {
+void render(void) {
 
 }
 
-int main() {
+int main(void) {
+	dbgout("program started");
 	int ret = window_init(800, 600, "Console");
 	if (ret) return ret;
 	window_loop(tick, render);
 	window_deinit();
 	check_memory_leaks();
+	dbgout("program finished");
 	return 0;
 }
