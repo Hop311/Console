@@ -21,9 +21,10 @@ set(SHADERS "tri_vert" "tri_frag")
 foreach(SHADER ${SHADERS})
 	set(INPUT_FILE "${SHADER}.glsl")
 	set(OUTPUT_FILE "${SHADER}.h")
+	set(OUTPUT_FILEPATH "${CMAKE_SOURCE_DIR}/shader/include/${OUTPUT_FILE}")
 	message("Sending ${INPUT_FILE} to ${OUTPUT_FILE}")
 	add_custom_command(
-		OUTPUT ${OUTPUT_FILE} DEPENDS "shader/${INPUT_FILE}"
+		OUTPUT ${OUTPUT_FILEPATH} DEPENDS "shader/${INPUT_FILE}"
 		COMMAND cd "${CMAKE_SOURCE_DIR}/shader"
 		COMMAND ${CMAKE_COMMAND} -E make_directory "include"
 		COMMAND xxd -i ${INPUT_FILE} "include/${OUTPUT_FILE}"
@@ -35,7 +36,7 @@ foreach(SHADER ${SHADERS})
 		# Add shader file title
 		COMMAND sed -i "1s/^/\\/\\/ ${INPUT_FILE}\\n/" ${OUTPUT_FILE}
 		COMMENT "Compiling ${INPUT_FILE} to binary")
-	LIST(APPEND SHADERS_INCLUDE ${OUTPUT_FILE})
+	LIST(APPEND SHADERS_INCLUDE ${OUTPUT_FILEPATH})
 endforeach()
 
 # Create exe
