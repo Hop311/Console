@@ -12,22 +12,24 @@
 #define TARGET_TPS 30
 #define TARGET_SPT 1.0/TARGET_TPS
 
-static GLFWwindow *window = NULL;
-static int window_width = 0, window_height = 0;
-static bool resized = false;
+static struct {
+	GLFWwindow *glfw_ptr;
+	int width, height;
+	bool resized;
+} window = { 0 };
 
 static void error_callback(int err, const char *desc) {
 	errout("GLFW error %d: %s", err, desc);
 }
-static void framebuffer_size_callback(GLFWwindow *_window, int width, int height) {
-	assert_s(window == _window && "[framebuffer_size_callback] _window unrecognised");
-	window_width = width;
-	window_height = height;
-	resized = true;
+static void framebuffer_size_callback(GLFWwindow *window_ptr, int width, int height) {
+	assert_s(window.glfw_ptr == window_ptr && "[framebuffer_size_callback] window_ptr unrecognised");
+	window.width = width;
+	window.height = height;
+	window.resized = true;
 }
 
 int window_init(int width, int height, const char *title) {
-	if (window) {
+	if (window.glfw_ptr) {
 		errout("window already created");
 		return -1;
 	}
@@ -41,20 +43,20 @@ int window_init(int width, int height, const char *title) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(width, height, title, NULL, NULL);
+	window.glfw_ptr = glfwCreateWindow(width, height, title, NULL, NULL);
 
-	if (window == NULL) {
+	if (window.glfw_ptr == NULL) {
 		errout("failed to open GLFW window");
 		glfwTerminate();
 		return -1;
 	}
 
-	glfwMakeContextCurrent(window);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwMakeContextCurrent(window.glfw_ptr);
+	glfwSetFramebufferSizeCallback(window.glfw_ptr, framebuffer_size_callback);
 
-	window_width = width;
-	window_height = height;
-	resized = true;
+	window.width = width;
+	window.height = height;
+	window.resized = true;
 
 	dbgout("GLFW setup complete");
 
@@ -69,23 +71,23 @@ int window_init(int width, int height, const char *title) {
 
 void window_deinit(void) {
 	renderer_deinit();
-	glfwDestroyWindow(window);
-	window = NULL;
+	glfwDestroyWindow(window.glfw_ptr);
+	window.glfw_ptr = NULL;
 	glfwTerminate();
 
 	dbgout("GLFW cleanup complete");
 }
 
 void window_loop(TickFunction tick, RenderFunction render) {
-	if (window == NULL) {
+	if (window.glfw_ptr == NULL) {
 		errout("window not yet initialised");
 		return;
 	}
 
 	double last_second = glfwGetTime(), last_loop = last_second, tick_time_passed = 0.0;
 	size_t frame_count = 0, tick_count = 0, fps_display = 0, tps_display = 0;
-	
-	while (!glfwWindowShouldClose(window)) {
+
+	while (!glfwWindowShouldClose(window.glfw_ptr)) {
 		const double current_time = glfwGetTime();
 		tick_time_passed += current_time - last_loop;
 
@@ -98,9 +100,9 @@ void window_loop(TickFunction tick, RenderFunction render) {
 				polling_time = glfwGetTime() - polling_time;
 				tick_time_passed -= TARGET_SPT + polling_time;
 
-				if (resized) {
-					resized = false;
-					renderer_resize(window_width, window_height);
+				if (window.resized) {
+					window.resized = false;
+					renderer_resize(window.width, window.height);
 				}
 
 				tick();
@@ -112,7 +114,7 @@ void window_loop(TickFunction tick, RenderFunction render) {
 			render();
 			renderer_render();
 
-			glfwSwapBuffers(window);
+			glfwSwapBuffers(window.glfw_ptr);
 		}
 
 		// Trigger each second

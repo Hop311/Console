@@ -21,9 +21,32 @@ static const char *debug_severity_name(GLenum severity) {
 	default: return "UNKNOWN";
 	}
 }
-void gl_error_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *user_param) {
+static const char *debug_source_name(GLenum source) {
+	switch (source) {
+#define F(X) case GL_DEBUG_SOURCE_##X: return #X;
+	F(API) F(WINDOW_SYSTEM) F(SHADER_COMPILER) F(THIRD_PARTY) F(APPLICATION) F(OTHER)
+#undef F
+	default: return "UNKNOWN";
+	}
+}
+
+void GLAPIENTRY gl_debug_output(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *user_param) {
 	(void)source; (void)id; (void)length; (void)user_param;
-	print_log("[%s][%s]\n\n%s", debug_type_name(type), debug_severity_name(severity), message);
+	print_log("[%s][%s][%s]\n\n%s", debug_type_name(type), debug_severity_name(severity), debug_source_name(source), message);
+}
+void enable_gl_debug_output(void) {
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(gl_debug_output, 0);
+}
+
+void load_texture(GLuint *texture, GLint internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels) {
+	assert_s(texture && "[load_image] texture == NULL");
+	glGenTextures(1, texture);
+	glBindTexture(GL_TEXTURE_2D, *texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, type, pixels);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 static const char *shader_type_name(GLenum type) {

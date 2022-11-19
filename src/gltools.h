@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 
-void gl_error_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *user_param);
+void enable_gl_debug_output(void);
+void load_texture(GLuint *texture, GLint internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
 int load_shader(GLenum shader_type, GLuint *shader, const char *source);
 int load_program(GLuint *program, const char *vertex_shader, const char *geometry_shader, const char *fragment_shader);

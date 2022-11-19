@@ -17,7 +17,7 @@ set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory
 
 # Generate shader headers
 include_directories("shader/include")
-set(SHADERS "tri_vert" "tri_frag")
+set(SHADERS "texture_vert" "texture_frag")
 foreach(SHADER ${SHADERS})
 	set(INPUT_FILE "${SHADER}.glsl")
 	set(OUTPUT_FILE "${SHADER}.h")
@@ -60,6 +60,21 @@ foreach(LIB ${DYNAMIC_LIBS})
 endforeach()
 target_sources(Console PRIVATE ${DYNAMIC_LIBS})
 
+# Copy resources to build directory
+set(RESOURCES "Alloy_curses_12x12_thicker.png")
+foreach(RES ${RESOURCES})
+	set(RES_FILEPATH "res/${RES}")
+	set(RES_FILEPATH_OUT "${CMAKE_BINARY_DIR}/${RES_FILEPATH}")
+	message("Copying ${RES} to build directory res folder")
+	add_custom_command(
+		OUTPUT ${RES_FILEPATH_OUT} DEPENDS ${RES_FILEPATH}
+		COMMAND ${CMAKE_COMMAND} -E make_directory "res"
+		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/${RES_FILEPATH}" "res"
+		COMMENT "Copying ${RES} to build directory res folder")
+	LIST(APPEND RESOURCES_INCLUDE ${RES_FILEPATH_OUT})
+endforeach()
+target_sources(Console PRIVATE ${RESOURCES_INCLUDE})
+
 # Extra clean instructions
 set_property( TARGET Console APPEND PROPERTY ADDITIONAL_CLEAN_FILES
-	"${CMAKE_SOURCE_DIR}/shader/include" DYNAMIC_LIBS)
+	"${CMAKE_SOURCE_DIR}/shader/include" "res" DYNAMIC_LIBS)
