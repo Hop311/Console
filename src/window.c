@@ -43,7 +43,7 @@ int window_init(int width, int height, const char *title) {
 
 	window = glfwCreateWindow(width, height, title, NULL, NULL);
 
-	if (!window) {
+	if (window == NULL) {
 		errout("failed to open GLFW window");
 		glfwTerminate();
 		return -1;
@@ -77,7 +77,7 @@ void window_deinit(void) {
 }
 
 void window_loop(TickFunction tick, RenderFunction render) {
-	if (!window) {
+	if (window == NULL) {
 		errout("window not yet initialised");
 		return;
 	}
@@ -91,7 +91,7 @@ void window_loop(TickFunction tick, RenderFunction render) {
 
 		if (tick_time_passed >= TARGET_SPT) {
 			// Tick
-			while (tick_time_passed >= TARGET_SPT) {
+			do {
 				tick_count++;
 				double polling_time = glfwGetTime();
 				glfwPollEvents();
@@ -104,7 +104,7 @@ void window_loop(TickFunction tick, RenderFunction render) {
 				}
 
 				tick();
-			}
+			} while (tick_time_passed >= TARGET_SPT);
 
 			// Frame
 			frame_count++;

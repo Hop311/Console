@@ -4,8 +4,6 @@
 #include "logging.h"
 #include "memory_s.h"
 
-#include "character.h"
-
 void tick(void) {
 
 }

@@ -2,7 +2,10 @@
 
 const char *get_filename(const char *path)
 {
-	if (!path) return NULL;
+	if (path == NULL) {
+		errout("path == NULL");
+		return NULL;
+	}
 	const char *last_slash = path;
 	while (*path != '\0')
 	{

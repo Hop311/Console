@@ -5,10 +5,11 @@
 #include "logging.h"
 #include "gltools.h"
 
+// Shaders
 #include "tri_vert.h"
 #include "tri_frag.h"
 
-const float TRI_DATA[] = {
+static const float TRI_DATA[] = {
 	0.0f, 0.5f, 1.0f, 0.0f, 0.0f,
 	-0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
 	0.5f, -0.5f, 0.0f, 0.0f, 1.0f
