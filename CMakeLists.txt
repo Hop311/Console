@@ -45,6 +45,8 @@ add_executable(Console ${SRC} ${SHADERS_INCLUDE})
 target_include_directories(Console PRIVATE "GL/include")
 target_link_directories(Console PRIVATE "GL/lib")
 target_link_libraries(Console opengl32.lib glfw3dll.lib glew32.lib)
+target_include_directories(Console PRIVATE "lodepng")
+target_sources(Console PRIVATE "lodepng/lodepng.c")
 
 # Copy dlls to build directory
 set(DYNAMIC_LIBS "glfw3.dll" "glew32.dll")
