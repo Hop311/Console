@@ -13,11 +13,11 @@ else()
 endif()
 
 # Add sources
-set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c" "src/gltools.c")
+set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c" "src/gltools.c" "src/character.c")
 
 # Generate shader headers
 include_directories("shader/include")
-set(SHADERS "texture_vert" "texture_frag")
+set(SHADERS "char_vert" "char_geom" "char_frag")
 foreach(SHADER ${SHADERS})
 	set(INPUT_FILE "${SHADER}.glsl")
 	set(OUTPUT_FILE "${SHADER}.h")

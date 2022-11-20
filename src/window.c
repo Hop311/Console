@@ -102,7 +102,8 @@ void window_loop(TickFunction tick, RenderFunction render) {
 
 				if (window.resized) {
 					window.resized = false;
-					renderer_resize(window.width, window.height);
+					renderer_resize(window.width, window.height, 4.0f);
+					dbgout("resized window to %dx%d", window.width, window.height);
 				}
 
 				tick();
