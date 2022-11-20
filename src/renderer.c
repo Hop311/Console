@@ -4,7 +4,7 @@
 #include "memory_s.h"
 #include "logging.h"
 #include "gltools.h"
-#include "character.h"
+#include "colour.h"
 
 #include "lodepng.h"
 
@@ -18,33 +18,14 @@
 #define CHARSHEET "res/Alloy_curses_12x12_thicker.png"
 #define CHAR_PADDING_FACTOR 0.5f
 
-static const float COLOURS[16 * 3] = {
-	0.0f,	0.0f,	0.0f,	// black
-	0.0f,	0.0f,	0.5f,	// blue
-	0.0f,	0.5f,	0.0f,	// green
-	0.0f,	0.5f,	0.5f,	// cyan
-	0.5f,	0.0f,	0.0f,	// red
-	0.5f,	0.0f,	0.5f,	// magenta
-	0.5f,	0.5f,	0.0f,	// brown
-	0.75f,	0.75f,	0.75f,	// light grey
-	0.5f,	0.5f,	0.5f,	// dark grey
-	0.0f,	0.0f,	1.0f,	// light blue
-	0.0f,	1.0f,	0.0f,	// light green
-	0.0f,	1.0f,	1.0f,	// light cyan
-	1.0f,	0.0f,	0.0f,	// light red
-	1.0f,	0.0f,	1.0f,	// light magenta
-	1.0f,	1.0f,	0.0f,	// yellow
-	1.0f,	1.0f,	1.0f	// white
-};
-
 static struct {
 	GLuint charsheet, program, vao, vbo;
 } gl_objects = { 0 };
-
-static character_grid_t grid = { 0 };
 static struct {
 	size_t width, height;
 } character;
+
+character_grid_t grid = { 0 };
 
 int renderer_init(void) {
 	glewExperimental = GL_TRUE;
@@ -117,8 +98,6 @@ void renderer_resize(int width, int height, float scale) {
 	scaled_char_height /= height;
 	character_grid_init(&grid, w, h);
 
-	character_grid_test_fill(&grid);
-
 	glBufferData(GL_ARRAY_BUFFER, sizeof(character_t) * grid.size, grid.chars, GL_DYNAMIC_DRAW);
 	glUniform1i(glGetUniformLocation(gl_objects.program, "width"), (GLuint)grid.width);
 	glUniform2f(glGetUniformLocation(gl_objects.program, "char_dims"), scaled_char_width * 2.0f, scaled_char_height * 2.0f);
@@ -127,6 +106,11 @@ void renderer_resize(int width, int height, float scale) {
 }
 
 void renderer_render(void) {
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(character_t) * grid.size, grid.chars);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDrawArrays(GL_POINTS, 0, (GLsizei)grid.size);
+}
+
+character_grid_t *renderer_grid(void) {
+	return &grid;
 }

@@ -102,7 +102,7 @@ void window_loop(TickFunction tick, RenderFunction render) {
 
 				if (window.resized) {
 					window.resized = false;
-					renderer_resize(window.width, window.height, 4.0f);
+					renderer_resize(window.width, window.height, 2.0f);
 					dbgout("resized window to %dx%d", window.width, window.height);
 				}
 
@@ -112,7 +112,7 @@ void window_loop(TickFunction tick, RenderFunction render) {
 			// Frame
 			frame_count++;
 
-			render();
+			render(renderer_grid());
 			renderer_render();
 
 			glfwSwapBuffers(window.glfw_ptr);
@@ -125,7 +125,7 @@ void window_loop(TickFunction tick, RenderFunction render) {
 			tps_display = tick_count;
 			frame_count = 0;
 			tick_count = 0;
-			dbgout("FPS: %zu, TPS: %zu", fps_display, tps_display);
+			if (fps_display != TARGET_TPS || tps_display != TARGET_TPS) dbgout("FPS: %zu, TPS: %zu", fps_display, tps_display);
 		}
 		last_loop = current_time;
 	}

@@ -26,12 +26,3 @@ character_t *character_grid_get(const character_grid_t *grid, size_t x, size_t y
 		return grid->chars + x + y * grid->width;
 	return NULL;
 }
-
-void character_grid_test_fill(character_grid_t *grid) {
-	assert_s(grid && "[character_grid_test_fill] grid == NULL");
-	if (grid->width == 0 || grid->height == 0 || grid->size == 0 || grid->chars == NULL)
-		errout("cannot test fill empty grid");
-	else
-		for (size_t i = 0; i < grid->size; ++i)
-			grid->chars[i] = (character_t){ .character = (uint8_t)i, .colour = (uint8_t)i  };
-}

@@ -14,5 +14,3 @@ typedef struct {
 void character_grid_init(character_grid_t *grid, size_t width, size_t height);
 void character_grid_free(character_grid_t *grid);
 character_t *character_grid_get(const character_grid_t *grid, size_t x, size_t y);
-
-void character_grid_test_fill(character_grid_t *grid);

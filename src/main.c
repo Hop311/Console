@@ -3,13 +3,17 @@
 #include "window.h"
 #include "logging.h"
 #include "memory_s.h"
+#include "colour.h"
+
+int offset = 0;
 
 void tick(void) {
-
+	offset++;
 }
 
-void render(void) {
-
+void render(character_grid_t *grid) {
+	for (size_t i = 0; i < grid->size; ++i)
+		grid->chars[i] = (character_t){ .character = '0' + (i + offset/3) % 10, .colour = pack_colours(WHITE, BLACK) };
 }
 
 int main(void) {

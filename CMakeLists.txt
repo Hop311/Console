@@ -13,7 +13,7 @@ else()
 endif()
 
 # Add sources
-set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c" "src/gltools.c" "src/character.c")
+set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c" "src/gltools.c" "src/character.c" "src/colour.c")
 
 # Generate shader headers
 include_directories("shader/include")
