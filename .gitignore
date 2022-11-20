@@ -1,0 +1,7 @@
+
+
+.vs/
+out/
+build/
+shader/include/
+*.zip
