@@ -43,19 +43,18 @@ endforeach()
 add_executable(Console ${SRC} ${SHADERS_INCLUDE})
 
 # Add dependencies
-target_include_directories(Console PRIVATE "GL/include")
-target_link_directories(Console PRIVATE "GL/lib")
+target_include_directories(Console PRIVATE "dependencies/include" "dependencies/lodepng")
+target_link_directories(Console PRIVATE "dependencies/lib")
 target_link_libraries(Console opengl32.lib glfw3dll.lib glew32.lib)
-target_include_directories(Console PRIVATE "lodepng")
-target_sources(Console PRIVATE "lodepng/lodepng.c")
+target_sources(Console PRIVATE "dependencies/lodepng/lodepng.c")
 
 # Copy dlls to build directory
 set(DYNAMIC_LIBS "glfw3.dll" "glew32.dll")
 foreach(LIB ${DYNAMIC_LIBS})
 	message("Copying ${LIB} to build directory")
 	add_custom_command(
-		OUTPUT ${LIB} DEPENDS "GL/bin/${LIB}"
-		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/GL/bin/${LIB}" .
+		OUTPUT ${LIB} DEPENDS "dependencies/bin/${LIB}"
+		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dependencies/bin/${LIB}" .
 		COMMENT "Copying ${LIB} to build directory")
 endforeach()
 target_sources(Console PRIVATE ${DYNAMIC_LIBS})
