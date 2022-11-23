@@ -20,7 +20,8 @@ int main(void) {
 	dbgout("program started");
 	int ret = window_init(800, 600, "Console");
 	if (ret) return ret;
-	window_loop(tick, render);
+	const window_functions_t window_functions = { tick, render };
+	window_loop(&window_functions);
 	window_deinit();
 	check_memory_leaks();
 	dbgout("program finished");

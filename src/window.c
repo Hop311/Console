@@ -6,6 +6,7 @@
 
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
+#include <pthread.h>
 
 #include <stdbool.h>
 #include <inttypes.h>
@@ -19,14 +20,23 @@ static struct {
 	bool resized;
 } window = { 0 };
 
+static struct {
+	pthread_t thread;
+	pthread_mutex_t close_mutex, resize_mutex;
+} loop = {
+		.close_mutex = PTHREAD_MUTEX_INITIALIZER,
+		.resize_mutex = PTHREAD_MUTEX_INITIALIZER };
+
 static void error_callback(int err, const char *desc) {
 	errout("GLFW error %d: %s", err, desc);
 }
 static void framebuffer_size_callback(GLFWwindow *window_ptr, int width, int height) {
 	assert_s(window.glfw_ptr == window_ptr && "[framebuffer_size_callback] window_ptr unrecognised");
+	pthread_mutex_lock(&loop.resize_mutex);
 	window.width = width;
 	window.height = height;
 	window.resized = true;
+	pthread_mutex_unlock(&loop.resize_mutex);
 }
 
 int window_init(int width, int height, const char *title) {
@@ -52,8 +62,9 @@ int window_init(int width, int height, const char *title) {
 		return -1;
 	}
 
-	glfwMakeContextCurrent(window.glfw_ptr);
 	glfwSetFramebufferSizeCallback(window.glfw_ptr, framebuffer_size_callback);
+
+	glfwMakeContextCurrent(window.glfw_ptr);
 
 	window.width = width;
 	window.height = height;
@@ -67,28 +78,36 @@ int window_init(int width, int height, const char *title) {
 		return -1;
 	}
 
+	glfwMakeContextCurrent(NULL);
+
 	return 0;
 }
-
 void window_deinit(void) {
+	if (window.glfw_ptr == NULL) {
+		errout("window uninitialised");
+		return;
+	}
+
 	renderer_deinit();
+
 	glfwDestroyWindow(window.glfw_ptr);
 	window.glfw_ptr = NULL;
 	glfwTerminate();
-
 	dbgout("GLFW cleanup complete");
+
+	pthread_mutex_destroy(&loop.close_mutex);
+	pthread_mutex_destroy(&loop.resize_mutex);
 }
 
-void window_loop(TickFunction tick, RenderFunction render) {
-	if (window.glfw_ptr == NULL) {
-		errout("window not yet initialised");
-		return;
-	}
+static void *loop_function(void *args) {
+	const window_functions_t *window_functions = args;
+	dbgout("loop thread started");
+	glfwMakeContextCurrent(window.glfw_ptr);
 
 	double last_second = glfwGetTime(), last_loop = last_second, tick_time_passed = 0.0;
 	uint64_t frame_count = 0, tick_count = 0, fps_display = 0, tps_display = 0;
 
-	while (!glfwWindowShouldClose(window.glfw_ptr)) {
+	while (pthread_mutex_trylock(&loop.close_mutex) == 0) {
 		const double current_time = glfwGetTime();
 		tick_time_passed += current_time - last_loop;
 
@@ -96,24 +115,22 @@ void window_loop(TickFunction tick, RenderFunction render) {
 			// Tick
 			do {
 				tick_count++;
-				double polling_time = glfwGetTime();
-				glfwPollEvents();
-				polling_time = glfwGetTime() - polling_time;
-				tick_time_passed -= TARGET_SPT + polling_time;
+				tick_time_passed -= TARGET_SPT;
 
 				if (window.resized) {
+					pthread_mutex_lock(&loop.resize_mutex);
 					window.resized = false;
 					renderer_resize(window.width, window.height, 2.0f);
-					dbgout("resized window to %dx%d", window.width, window.height);
+					pthread_mutex_unlock(&loop.resize_mutex);
 				}
 
-				tick();
+				window_functions->tick();
 			} while (tick_time_passed >= TARGET_SPT);
 
 			// Frame
 			frame_count++;
 
-			render(renderer_grid());
+			window_functions->render(renderer_grid());
 			renderer_render();
 
 			glfwSwapBuffers(window.glfw_ptr);
@@ -130,5 +147,34 @@ void window_loop(TickFunction tick, RenderFunction render) {
 				dbgout("FPS: %"PRIu64", TPS: %"PRIu64, fps_display, tps_display);
 		}
 		last_loop = current_time;
+		pthread_mutex_unlock(&loop.close_mutex);
 	}
+	glfwMakeContextCurrent(NULL);
+	dbgout("finishing loop thread");
+	return (void *)0xDEAD;
+}
+
+void window_loop(const window_functions_t *window_functions) {
+	if (window.glfw_ptr == NULL) {
+		errout("window not yet initialised");
+		return;
+	}
+
+	dbgout("starting loop thread");
+	int ret = pthread_create(&loop.thread, NULL, loop_function, (void *)window_functions);
+	if (ret) {
+		errout("thread creation failed with code: %d", ret);
+		return;
+	}
+
+	while (!glfwWindowShouldClose(window.glfw_ptr))
+		glfwWaitEvents();
+
+	pthread_mutex_lock(&loop.close_mutex);
+	void *thread_ret = NULL;
+	pthread_join(loop.thread, &thread_ret);
+	pthread_mutex_unlock(&loop.close_mutex);
+	dbgout("loop thread finished, returning %p", thread_ret);
+
+	glfwMakeContextCurrent(window.glfw_ptr);
 }
