@@ -13,7 +13,8 @@ else()
 endif()
 
 # Add sources
-set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c" "src/gltools.c" "src/character.c" "src/colour.c")
+set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c"
+	"src/gltools.c" "src/character.c" "src/colour.c")
 
 # Generate shader headers
 include_directories("shader/include")
@@ -43,10 +44,11 @@ endforeach()
 add_executable(Console ${SRC} ${SHADERS_INCLUDE})
 
 # Add dependencies
-target_include_directories(Console PRIVATE "dependencies/include" "dependencies/include/pthread" "dependencies/lodepng")
+target_include_directories(Console PRIVATE "dependencies/include"
+	"dependencies/include/pthread" "dependencies/include/lodepng")
 target_link_directories(Console PRIVATE "dependencies/lib")
 target_link_libraries(Console opengl32.lib glfw3dll.lib glew32.lib pthreadVC3.lib)
-target_sources(Console PRIVATE "dependencies/lodepng/lodepng.c")
+target_sources(Console PRIVATE "dependencies/include/lodepng/lodepng.c")
 
 # Copy dlls to build directory
 set(DYNAMIC_LIBS "glfw3.dll" "glew32.dll" "pthreadVC3.dll")
