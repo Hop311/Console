@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdint.h>
-
 #define BLACK			0
 #define BLUE			1
 #define GREEN			2
@@ -19,6 +17,6 @@
 #define YELLOW			14
 #define WHITE			15
 
-extern const float COLOURS[16 * 3];
+#define PACK_COLOURS(foreground, background) ((foreground & 15) << 4) | (background & 15)
 
-uint8_t pack_colours(uint8_t foreground, uint8_t background);
+extern const float COLOURS[16][3];

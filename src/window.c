@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stdbool.h>
+#include <inttypes.h>
 
 #define TARGET_TPS 30
 #define TARGET_SPT 1.0/TARGET_TPS
@@ -85,7 +86,7 @@ void window_loop(TickFunction tick, RenderFunction render) {
 	}
 
 	double last_second = glfwGetTime(), last_loop = last_second, tick_time_passed = 0.0;
-	size_t frame_count = 0, tick_count = 0, fps_display = 0, tps_display = 0;
+	uint64_t frame_count = 0, tick_count = 0, fps_display = 0, tps_display = 0;
 
 	while (!glfwWindowShouldClose(window.glfw_ptr)) {
 		const double current_time = glfwGetTime();
@@ -125,7 +126,8 @@ void window_loop(TickFunction tick, RenderFunction render) {
 			tps_display = tick_count;
 			frame_count = 0;
 			tick_count = 0;
-			if (fps_display != TARGET_TPS || tps_display != TARGET_TPS) dbgout("FPS: %zu, TPS: %zu", fps_display, tps_display);
+			if (fps_display != TARGET_TPS || tps_display != TARGET_TPS)
+				dbgout("FPS: %"PRIu64", TPS: %"PRIu64, fps_display, tps_display);
 		}
 		last_loop = current_time;
 	}

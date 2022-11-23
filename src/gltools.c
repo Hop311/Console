@@ -30,13 +30,15 @@ static const char *debug_source_name(GLenum source) {
 	}
 }
 
+static const void *DEBUG_ID = (void *)0xDEB06;
 void GLAPIENTRY gl_debug_output(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *user_param) {
-	(void)source; (void)id; (void)length; (void)user_param;
-	print_log("[%s][%s][%s]\n\n%s", debug_type_name(type), debug_severity_name(severity), debug_source_name(source), message);
+	if (user_param != DEBUG_ID)
+		errout("unexpected user_param: %p (was set as %p)", user_param, DEBUG_ID);
+	print_log("[%s][%s][%s] id = %x, length = %d\n\n%s", debug_type_name(type), debug_severity_name(severity), debug_source_name(source), id, length, message);
 }
 void enable_gl_debug_output(void) {
 	glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(gl_debug_output, 0);
+	glDebugMessageCallback(gl_debug_output, DEBUG_ID);
 }
 
 void load_texture(GLuint *texture, GLint internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels) {

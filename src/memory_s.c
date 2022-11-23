@@ -3,11 +3,12 @@
 #include "logging.h"
 #include "assert_s.h"
 
+#include <inttypes.h>
 #include <stdlib.h>
 
-static int malloc_count = 0;
-static int realloc_count = 0;
-static int free_count = 0;
+static int64_t malloc_count = 0;
+static int64_t realloc_count = 0;
+static int64_t free_count = 0;
 
 void *malloc_s(size_t size) {
 	if (size == 0) {
@@ -52,6 +53,7 @@ void free_s(void *ptr) {
 }
 
 void check_memory_leaks(void) {
-	dbgout("malloc_count = %d, realloc_count = %d, free_count = %d", malloc_count, realloc_count, free_count);
-	dbgout("malloc_count - free_count = %d", malloc_count - free_count);
+	dbgout("malloc_count = %"PRId64", realloc_count = %"PRId64", free_count = %"PRId64, malloc_count, realloc_count, free_count);
+	if (malloc_count - free_count)
+		errout("malloc_count - free_count = %"PRId64, malloc_count - free_count);
 }

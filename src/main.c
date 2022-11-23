@@ -12,8 +12,8 @@ void tick(void) {
 }
 
 void render(character_grid_t *grid) {
-	for (size_t i = 0; i < grid->size; ++i)
-		grid->chars[i] = (character_t){ .character = '0' + (i + offset/3) % 10, .colour = pack_colours(WHITE, BLACK) };
+	for (uint32_t i = 0; i < grid->size; ++i)
+		grid->chars[i] = (character_t){ .character = '0' + (i + offset / 3) % 10, .colour = PACK_COLOURS(((i*(i+1) + offset*offset) / 5) & 1 ? GREEN : LIGHT_GREEN, BLACK) };
 }
 
 int main(void) {

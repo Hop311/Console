@@ -22,10 +22,15 @@ static struct {
 	GLuint charsheet, program, vao, vbo;
 } gl_objects = { 0 };
 static struct {
-	size_t width, height;
+	uint32_t width, height;
 } character;
 
 character_grid_t grid = { 0 };
+
+static void set_background_colour(uint8_t colour) {
+	colour &= 15;
+	glClearColor(COLOURS[colour][0], COLOURS[colour][1], COLOURS[colour][2], 1.0f);
+}
 
 int renderer_init(void) {
 	glewExperimental = GL_TRUE;
@@ -36,7 +41,7 @@ int renderer_init(void) {
 
 	enable_gl_debug_output();
 
-	glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
+	set_background_colour(LIGHT_BLUE);
 
 	unsigned char *image = NULL;
 	unsigned width, height;
@@ -71,7 +76,7 @@ int renderer_init(void) {
 	}
 	glUseProgram(gl_objects.program);
 	glUniform1i(glGetUniformLocation(gl_objects.program, "charsheet"), 0);
-	glUniform3fv(glGetUniformLocation(gl_objects.program, "colours"), sizeof(COLOURS)/3, COLOURS);
+	glUniform3fv(glGetUniformLocation(gl_objects.program, "colours"), sizeof(COLOURS)/3, &COLOURS[0][0]);
 
 	dbgout("OpenGL setup complete");
 	return 0;
@@ -92,13 +97,13 @@ void renderer_resize(int width, int height, float scale) {
 	glViewport(0, 0, width, height);
 	float scaled_char_width = scale * (float)character.width;
 	float scaled_char_height = scale * (float)character.height;
-	const size_t w = (width - (size_t)(scaled_char_width * CHAR_PADDING_FACTOR)) / (size_t)scaled_char_width;
-	const size_t h = (height - (size_t)(scaled_char_height * CHAR_PADDING_FACTOR)) / (size_t)scaled_char_height;
+	const uint32_t w = (uint32_t)((width - scaled_char_width * CHAR_PADDING_FACTOR) / scaled_char_width);
+	const uint32_t h = (uint32_t)((height - scaled_char_height * CHAR_PADDING_FACTOR) / scaled_char_height);
 	scaled_char_width /= width;
 	scaled_char_height /= height;
 	character_grid_init(&grid, w, h);
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(character_t) * grid.size, grid.chars, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(character_t) * grid.size, grid.chars, GL_STREAM_DRAW);
 	glUniform1i(glGetUniformLocation(gl_objects.program, "width"), (GLuint)grid.width);
 	glUniform2f(glGetUniformLocation(gl_objects.program, "char_dims"), scaled_char_width * 2.0f, scaled_char_height * 2.0f);
 	glUniform2f(glGetUniformLocation(gl_objects.program, "top_left"),
