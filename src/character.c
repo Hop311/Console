@@ -4,25 +4,21 @@
 #include "memory_s.h"
 #include "logging.h"
 
-void character_grid_init(character_grid_t *grid, uint32_t width, uint32_t height) {
+void character_grid_init(character_grid_t *grid, uvec2 dims) {
 	assert_s(grid && "[character_grid_init] grid == NULL");
 	character_grid_free(grid);
-	if (width == 0 || height == 0) *grid = (character_grid_t){ 0 };
-	else {
-		grid->width = width;
-		grid->height = height;
-		grid->size = width * height;
-		grid->chars = calloc_s(grid->size * sizeof(character_t));
-	}
+	const uint32_t size = dims.width * dims.height;
+	if (size == 0) *grid = (character_grid_t){ 0 };
+	else *grid = (character_grid_t){ dims, size, calloc_s(size * sizeof(character_t)) };
 }
 void character_grid_free(character_grid_t *grid) {
 	assert_s(grid && "[character_grid_free] grid == NULL");
 	free_s(grid->chars);
 	*grid = (character_grid_t){ 0 };
 }
-character_t *character_grid_get(const character_grid_t *grid, uint32_t x, uint32_t y) {
+character_t *character_grid_get(const character_grid_t *grid, uvec2 point) {
 	assert_s(grid && "[character_grid_get] grid == NULL");
-	if (grid->chars && x < grid->width && y < grid->height)
-		return grid->chars + x + y * grid->width;
+	if (grid->chars && point.x < grid->dims.width && point.y < grid->dims.height)
+		return grid->chars + point.x + point.y * grid->dims.width;
 	return NULL;
 }

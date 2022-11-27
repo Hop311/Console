@@ -16,7 +16,7 @@
 
 static struct {
 	GLFWwindow *glfw_ptr;
-	int width, height;
+	uvec2 dims;
 	bool resized;
 } window = { 0 };
 
@@ -33,13 +33,12 @@ static void error_callback(int err, const char *desc) {
 static void framebuffer_size_callback(GLFWwindow *window_ptr, int width, int height) {
 	assert_s(window.glfw_ptr == window_ptr && "[framebuffer_size_callback] window_ptr unrecognised");
 	pthread_mutex_lock(&loop.resize_mutex);
-	window.width = width;
-	window.height = height;
+	window.dims = (uvec2){{ width, height }};
 	window.resized = true;
 	pthread_mutex_unlock(&loop.resize_mutex);
 }
 
-int window_init(int width, int height, const char *title) {
+int window_init(uvec2 dims, const char *title) {
 	if (window.glfw_ptr) {
 		errout("window already created");
 		return -1;
@@ -54,7 +53,7 @@ int window_init(int width, int height, const char *title) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window.glfw_ptr = glfwCreateWindow(width, height, title, NULL, NULL);
+	window.glfw_ptr = glfwCreateWindow(dims.width, dims.height, title, NULL, NULL);
 
 	if (window.glfw_ptr == NULL) {
 		errout("failed to open GLFW window");
@@ -66,8 +65,7 @@ int window_init(int width, int height, const char *title) {
 
 	glfwMakeContextCurrent(window.glfw_ptr);
 
-	window.width = width;
-	window.height = height;
+	window.dims = dims;
 	window.resized = true;
 
 	dbgout("GLFW setup complete");
@@ -77,8 +75,6 @@ int window_init(int width, int height, const char *title) {
 		glfwTerminate();
 		return -1;
 	}
-
-	glfwMakeContextCurrent(NULL);
 
 	return 0;
 }
@@ -120,7 +116,7 @@ static void *loop_function(void *args) {
 				if (window.resized) {
 					pthread_mutex_lock(&loop.resize_mutex);
 					window.resized = false;
-					renderer_resize(window.width, window.height, 2.0f);
+					renderer_resize(window.dims, 2.0f);
 					pthread_mutex_unlock(&loop.resize_mutex);
 				}
 
@@ -159,7 +155,7 @@ void window_loop(const window_functions_t *window_functions) {
 		errout("window not yet initialised");
 		return;
 	}
-
+	glfwMakeContextCurrent(NULL);
 	dbgout("starting loop thread");
 	int ret = pthread_create(&loop.thread, NULL, loop_function, (void *)window_functions);
 	if (ret) {

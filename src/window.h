@@ -7,6 +7,6 @@ typedef struct {
 	void (*render)(character_grid_t *grid);
 } window_functions_t;
 
-int window_init(int width, int height, const char *title);
+int window_init(uvec2 dims, const char *title);
 void window_deinit(void);
 void window_loop(const window_functions_t *window_functions);

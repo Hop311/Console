@@ -1,5 +1,9 @@
 #pragma once
 
+#include "vec.h"
+
+#define COLOUR_COUNT	16
+
 #define BLACK			0
 #define BLUE			1
 #define GREEN			2
@@ -17,6 +21,6 @@
 #define YELLOW			14
 #define WHITE			15
 
-#define PACK_COLOURS(foreground, background) ((foreground & 15) << 4) | (background & 15)
+extern const colour_t COLOURS[COLOUR_COUNT];
 
-extern const float COLOURS[16][3];
+uint8_t pack_colours(uint8_t foreground, uint8_t background);
