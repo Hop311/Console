@@ -21,9 +21,17 @@
 static struct {
 	GLuint charsheet, program, vao, vbo;
 } gl_objects = { 0 };
-static uvec2 char_dims;
-
-character_grid_t grid = { 0 };
+static struct {
+	uvec2 dims, char_dims;
+} window = { 0 };
+static struct {
+	fvec2 char_dims, top_left;
+} screen = { 0 };
+static struct {
+	character_grid_t grid;
+	uvec2 cursor_pos;
+	bool cursor_in_grid;
+} grid = { 0 };
 
 static void set_background_colour(uint8_t colour) {
 	const colour_t *bg_colour = &COLOURS[colour & 15];
@@ -52,7 +60,7 @@ int renderer_init(void) {
 		errout("invalid charsheet dimensions %ux%u (both must be non-zero multiples of 16)", width, height);
 		return -1;
 	}
-	char_dims = (uvec2){{ width / 16, height / 16 }};
+	window.char_dims = (uvec2){{ width / 16, height / 16 }};
 
 	load_texture(&gl_objects.charsheet, GL_R8, width, height, GL_RED, GL_UNSIGNED_BYTE, image);
 	free(image);
@@ -80,7 +88,7 @@ int renderer_init(void) {
 }
 
 void renderer_deinit(void) {
-	character_grid_free(&grid);
+	character_grid_free(&grid.grid);
 
 	glDeleteProgram(gl_objects.program);
 	glDeleteVertexArrays(1, &gl_objects.vao);
@@ -90,31 +98,60 @@ void renderer_deinit(void) {
 	dbgout("OpenGL cleanup complete");
 }
 
-void renderer_resize(uvec2 dims, float scale) {
-	glViewport(0, 0, dims.width, dims.height);
-	float scaled_char_width = scale * (float)char_dims.width;
-	float scaled_char_height = scale * (float)char_dims.height;
-	const uvec2 grid_dims = {{
-		(uint32_t)((dims.width - scaled_char_width * CHAR_PADDING_FACTOR) / scaled_char_width),
-		(uint32_t)((dims.height - scaled_char_height * CHAR_PADDING_FACTOR) / scaled_char_height)
-	}};
-	character_grid_init(&grid, grid_dims);
-	scaled_char_width /= dims.width;
-	scaled_char_height /= dims.height;
+static fvec2 window_to_screen_coords(uvec2 window_coords) {
+	return (fvec2){{ (float)window_coords.x / (float)window.dims.width * 2.0f - 1.0f,
+		(float)window_coords.y / (float)window.dims.height * 2.0f - 1.0f }};
+}
+static uvec2 screen_to_grid_coords(fvec2 screen_coords) {
+	return (uvec2) {{ (uint32_t)((screen_coords.x - screen.top_left.x) / screen.char_dims.width),
+		(uint32_t)((float)grid.grid.dims.height - (screen.top_left.y - screen_coords.y) / screen.char_dims.height) }};
+}
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(character_t) * grid.size, grid.chars, GL_STREAM_DRAW);
-	glUniform1i(glGetUniformLocation(gl_objects.program, "width"), grid.dims.width);
-	glUniform2f(glGetUniformLocation(gl_objects.program, "char_dims"), scaled_char_width * 2.0f, scaled_char_height * 2.0f);
-	glUniform2f(glGetUniformLocation(gl_objects.program, "top_left"),
-		(float)grid_dims.width * -scaled_char_width, (float)grid_dims.height * scaled_char_height);
+void renderer_resize(uvec2 dims, float scale) {
+	assert_s(scale > 0.0f && "[renderer_resize] scale <= 0.0f");
+	window.dims = dims;
+	glViewport(0, 0, dims.width, dims.height);
+	screen.char_dims = (fvec2){{ scale * (float)window.char_dims.width, scale * (float)window.char_dims.height }};
+	character_grid_init(&grid.grid, (uvec2) { {
+		(uint32_t)((dims.width - screen.char_dims.width * CHAR_PADDING_FACTOR) / screen.char_dims.width),
+		(uint32_t)((dims.height - screen.char_dims.height * CHAR_PADDING_FACTOR) / screen.char_dims.height)
+	}});
+	screen.char_dims.width /= dims.width;
+	screen.char_dims.height /= dims.height;
+	screen.top_left = (fvec2){{ (float)grid.grid.dims.width * -screen.char_dims.width, (float)grid.grid.dims.height * screen.char_dims.height }};
+	screen.char_dims.width *= 2.0f;
+	screen.char_dims.height *= 2.0f;
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(character_t) * grid.grid.size, grid.grid.chars, GL_STREAM_DRAW);
+	glUniform1i(glGetUniformLocation(gl_objects.program, "width"), grid.grid.dims.width);
+	glUniform2f(glGetUniformLocation(gl_objects.program, "char_dims"), screen.char_dims.width, screen.char_dims.height);
+	glUniform2f(glGetUniformLocation(gl_objects.program, "top_left"), screen.top_left.x, screen.top_left.y);
+}
+
+void renderer_cursor_pos_update(uvec2 window_pos, bool in_window) {
+	if (in_window) {
+		const fvec2 screen_pos = window_to_screen_coords(window_pos);
+		if (screen_pos.x >= screen.top_left.x && screen_pos.y <= screen.top_left.y && screen_pos.x <= -screen.top_left.x && screen_pos.y >= -screen.top_left.y) {
+			grid.cursor_pos = screen_to_grid_coords(screen_pos);
+			grid.cursor_in_grid = true;
+			return;
+		}
+	}
+	grid.cursor_in_grid = false;
 }
 
 void renderer_render(void) {
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(character_t) * grid.size, grid.chars);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(character_t) * grid.grid.size, grid.grid.chars);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glDrawArrays(GL_POINTS, 0, (GLsizei)grid.size);
+	glDrawArrays(GL_POINTS, 0, (GLsizei)grid.grid.size);
 }
 
-character_grid_t *renderer_grid(void) {
-	return &grid;
+const character_grid_t *renderer_grid(void) {
+	return (const character_grid_t *)&grid;
+}
+bool renderer_cursor_in_grid(void) {
+	return grid.cursor_in_grid;
+}
+uvec2 renderer_cursor_pos_grid(void) {
+	return grid.cursor_pos;
 }

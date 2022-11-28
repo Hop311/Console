@@ -16,16 +16,17 @@
 
 static struct {
 	GLFWwindow *glfw_ptr;
-	uvec2 dims;
-	bool resized;
+	uvec2 dims, cursor_pos;
+	bool resized, cursor_in_window, cursor_changed;
 } window = { 0 };
 
 static struct {
 	pthread_t thread;
-	pthread_mutex_t close_mutex, resize_mutex;
+	pthread_mutex_t close_mutex, resize_mutex, cursor_mutex;
 } loop = {
 		.close_mutex = PTHREAD_MUTEX_INITIALIZER,
-		.resize_mutex = PTHREAD_MUTEX_INITIALIZER };
+		.resize_mutex = PTHREAD_MUTEX_INITIALIZER,
+		.cursor_mutex = PTHREAD_MUTEX_INITIALIZER };
 
 static void error_callback(int err, const char *desc) {
 	errout("GLFW error %d: %s", err, desc);
@@ -36,6 +37,20 @@ static void framebuffer_size_callback(GLFWwindow *window_ptr, int width, int hei
 	window.dims = (uvec2){{ width, height }};
 	window.resized = true;
 	pthread_mutex_unlock(&loop.resize_mutex);
+}
+static void cursor_enter_callback(GLFWwindow *window_ptr, int entered) {
+	assert_s(window.glfw_ptr == window_ptr && "[cursor_enter_callback] window_ptr unrecognised");
+	pthread_mutex_lock(&loop.cursor_mutex);
+	window.cursor_in_window = entered == GL_TRUE;
+	window.cursor_changed = true;
+	pthread_mutex_unlock(&loop.cursor_mutex);
+}
+static void cursor_pos_callback(GLFWwindow *window_ptr, double xpos, double ypos) {
+	assert_s(window.glfw_ptr == window_ptr && "[cursor_pos_callback] window_ptr unrecognised");
+	pthread_mutex_lock(&loop.cursor_mutex);
+	window.cursor_pos = (uvec2){{ (uint32_t)xpos, (uint32_t)ypos }};
+	window.cursor_changed = true;
+	pthread_mutex_unlock(&loop.cursor_mutex);
 }
 
 int window_init(uvec2 dims, const char *title) {
@@ -62,6 +77,8 @@ int window_init(uvec2 dims, const char *title) {
 	}
 
 	glfwSetFramebufferSizeCallback(window.glfw_ptr, framebuffer_size_callback);
+	glfwSetCursorEnterCallback(window.glfw_ptr, cursor_enter_callback);
+	glfwSetCursorPosCallback(window.glfw_ptr, cursor_pos_callback);
 
 	glfwMakeContextCurrent(window.glfw_ptr);
 
@@ -93,6 +110,7 @@ void window_deinit(void) {
 
 	pthread_mutex_destroy(&loop.close_mutex);
 	pthread_mutex_destroy(&loop.resize_mutex);
+	pthread_mutex_destroy(&loop.cursor_mutex);
 }
 
 static void *loop_function(void *args) {
@@ -119,6 +137,12 @@ static void *loop_function(void *args) {
 					renderer_resize(window.dims, 2.0f);
 					pthread_mutex_unlock(&loop.resize_mutex);
 				}
+				if (window.cursor_changed) {
+					pthread_mutex_lock(&loop.cursor_mutex);
+					window.cursor_changed = false;
+					renderer_cursor_pos_update(window.cursor_pos, window.cursor_in_window);
+					pthread_mutex_unlock(&loop.cursor_mutex);
+				}
 
 				window_functions->tick();
 			} while (tick_time_passed >= TARGET_SPT);
@@ -126,7 +150,7 @@ static void *loop_function(void *args) {
 			// Frame
 			frame_count++;
 
-			window_functions->render(renderer_grid());
+			window_functions->render();
 			renderer_render();
 
 			glfwSwapBuffers(window.glfw_ptr);

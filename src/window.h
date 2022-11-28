@@ -4,7 +4,7 @@
 
 typedef struct {
 	void (*tick)(void);
-	void (*render)(character_grid_t *grid);
+	void (*render)(void);
 } window_functions_t;
 
 int window_init(uvec2 dims, const char *title);

@@ -8,6 +8,7 @@
     STATIC_ASSERT(sizeof(name) == sizeof(type[2]), sizeof_##name);
 VEC2(int32_t, ivec2)
 VEC2(uint32_t, uvec2)
+VEC2(float, fvec2)
 #undef VEC2
 
 #define VEC3(type, name) typedef union { struct { type x, y, z; }; struct { type width, height, depth; }; struct { type r, g, b; }; type v[3]; } name; \
