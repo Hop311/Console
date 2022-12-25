@@ -16,7 +16,7 @@
 #include "char_frag.h"
 
 #define CHARSHEET "res/Alloy_curses_12x12_thicker.png"
-#define CHAR_PADDING_FACTOR 0.5f
+#define CHAR_PADDING_FACTOR 0.1f
 
 static struct {
 	GLuint charsheet, program, vao, vbo;
@@ -47,7 +47,7 @@ int renderer_init(void) {
 
 	enable_gl_debug_output();
 
-	set_background_colour(LIGHT_BLUE);
+	set_background_colour(BLACK);
 
 	unsigned char *image = NULL;
 	unsigned width, height;

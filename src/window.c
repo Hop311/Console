@@ -4,6 +4,7 @@
 #include "memory_s.h"
 #include "logging.h"
 #include "renderer.h"
+#include "maths.h"
 
 #define GLFW_DLL
 #include <GLFW/glfw3.h>
@@ -15,9 +16,14 @@
 #define TARGET_TPS 30
 #define TARGET_SPT 1.0/TARGET_TPS
 
+#define SCALE_DEFAULT 2.0f
+#define SCALE_MIN 1.0f
+#define SCALE_MAX 3.0f
+
 static struct {
 	GLFWwindow *glfw_ptr;
 	uvec2 dims, cursor_pos;
+	float scale;
 	bool resized, cursor_in_window, cursor_changed;
 	key_event_t *key_events;
 } window = { 0 };
@@ -51,6 +57,14 @@ static void cursor_pos_callback(GLFWwindow *window_ptr, double xpos, double ypos
 	pthread_mutex_lock(&loop.input_mutex);
 	window.cursor_pos = (uvec2){{ (uint32_t)xpos, (uint32_t)ypos }};
 	window.cursor_changed = true;
+	pthread_mutex_unlock(&loop.input_mutex);
+}
+static void scroll_callback(GLFWwindow *window_ptr, double xoffset, double yoffset) {
+	(void)xoffset;
+	assert_s(window.glfw_ptr == window_ptr && "[scroll_callback] window_ptr unrecognised");
+	pthread_mutex_lock(&loop.input_mutex);
+	window.scale = CLAMP(window.scale + 0.1f * (float)yoffset, SCALE_MIN, SCALE_MAX);
+	window.resized = true;
 	pthread_mutex_unlock(&loop.input_mutex);
 }
 static void key_callback(GLFWwindow *window_ptr, int key, int scancode, int action, int mods) {
@@ -88,11 +102,13 @@ int window_init(uvec2 dims, const char *title) {
 	glfwSetFramebufferSizeCallback(window.glfw_ptr, framebuffer_size_callback);
 	glfwSetCursorEnterCallback(window.glfw_ptr, cursor_enter_callback);
 	glfwSetCursorPosCallback(window.glfw_ptr, cursor_pos_callback);
+	glfwSetScrollCallback(window.glfw_ptr, scroll_callback);
 	glfwSetKeyCallback(window.glfw_ptr, key_callback);
 
 	glfwMakeContextCurrent(window.glfw_ptr);
 
 	window.dims = dims;
+	window.scale = SCALE_DEFAULT;
 	window.resized = true;
 
 	dbgout("GLFW setup complete");
@@ -145,7 +161,7 @@ static void *loop_function(void *args) {
 				pthread_mutex_lock(&loop.input_mutex);
 				if (window.resized) {
 					window.resized = false;
-					renderer_resize(window.dims, 2.0f);
+					renderer_resize(window.dims, window.scale);
 				}
 				if (window.cursor_changed) {
 					window.cursor_changed = false;
