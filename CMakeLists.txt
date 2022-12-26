@@ -42,15 +42,22 @@ endif()
 
 # Add dependencies
 add_subdirectory(deps/glfw EXCLUDE_FROM_ALL)
-set(glew-cmake_BUILD_SHARED NO)
+option(glew-cmake_BUILD_SHARED NO)
 add_subdirectory(deps/glew EXCLUDE_FROM_ALL)
-add_subdirectory(deps/pthread EXCLUDE_FROM_ALL)
 
-target_link_libraries(Console PRIVATE glfw libglew_static pthreadVC3)
+target_link_libraries(Console PRIVATE glfw libglew_static)
+if(MSVC)
+	add_subdirectory(deps/pthread EXCLUDE_FROM_ALL)
+	target_link_libraries(Console PRIVATE pthreadVC3)
+else()
+	target_link_libraries(Console PRIVATE pthread)
+endif()
 
 target_include_directories(Console PRIVATE "deps/lodepng")
-set_source_files_properties("deps/lodepng/lodepng.cpp" PROPERTIES
-	LANGUAGE C COMPILE_OPTIONS "/wd4267;/wd4334")
+set_source_files_properties("deps/lodepng/lodepng.cpp" PROPERTIES LANGUAGE C)
+if(MSVC)
+	set_source_files_properties("deps/lodepng/lodepng.cpp" PROPERTIES COMPILE_OPTIONS "/wd4267;/wd4334")
+endif()
 target_sources(Console PRIVATE "deps/lodepng/lodepng.cpp")
 
 # Copy resources to build directory
