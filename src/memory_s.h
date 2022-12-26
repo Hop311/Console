@@ -22,6 +22,7 @@ typedef struct {
 #define buf_end(b) ((b) + buf_len(b))
 #define buf_back(b) (buf_end(b) - 1)
 #define buf_sizeof(b) ((b) ? buf_len(b)*sizeof(*(b)) : (size_t)0)
+#define buf_empty(b) (buf_len(b) == 0)
 
 #define buf_free(b) ((b) ? (free_s(buf__hdr(b)), (b) = NULL) : 0)
 #define buf_fit(b, n) ((n) <= buf_cap(b) ? 0 : ((b) = buf__grow((b), (n), sizeof(*(b)))))

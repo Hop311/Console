@@ -22,6 +22,12 @@ const colour_t COLOURS[COLOUR_COUNT] = {
 uint8_t colour_pack(uint8_t foreground, uint8_t background) {
 	return (foreground << 4) | (background & 15);
 }
-uint8_t colour_invert(uint8_t col) {
-	return (col >> 4) | (col << 4);
+uint8_t colour_foreground(uint8_t colour) {
+	return colour >> 4;
+}
+uint8_t colour_background(uint8_t colour) {
+	return colour & 15;
+}
+uint8_t colour_invert(uint8_t colour) {
+	return (colour >> 4) | (colour << 4);
 }

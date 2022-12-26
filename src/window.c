@@ -10,7 +10,6 @@
 #include <GLFW/glfw3.h>
 #include <pthread.h>
 
-#include <stdbool.h>
 #include <inttypes.h>
 
 #define TARGET_TPS 30
@@ -20,13 +19,21 @@
 #define SCALE_MIN 1.0f
 #define SCALE_MAX 3.0f
 
+const int ACTION_PRESS = GLFW_PRESS;
+const int KEY_ESCAPE = GLFW_KEY_ESCAPE;
+const int MOUSEBUTTON_LEFT = GLFW_MOUSE_BUTTON_LEFT;
+
 static struct {
 	GLFWwindow *glfw_ptr;
-	uvec2 dims, cursor_pos;
+	uvec2 dims;
 	float scale;
-	bool resized, cursor_in_window, cursor_changed;
-	key_event_t *key_events;
+	bool resized;
+	input_event_t *key_events_current, *key_events_last, *mousebutton_events_current, *mousebutton_events_last;
 } window = { 0 };
+static struct {
+	uvec2 pos_window, pos_grid;
+	bool in_window, in_grid, changed;
+} cursor = { 0 };
 
 static struct {
 	pthread_t thread;
@@ -48,15 +55,21 @@ static void framebuffer_size_callback(GLFWwindow *window_ptr, int width, int hei
 static void cursor_enter_callback(GLFWwindow *window_ptr, int entered) {
 	assert_s(window.glfw_ptr == window_ptr && "[cursor_enter_callback] window_ptr unrecognised");
 	pthread_mutex_lock(&loop.input_mutex);
-	window.cursor_in_window = entered == GL_TRUE;
-	window.cursor_changed = true;
+	cursor.in_window = entered == GL_TRUE;
+	cursor.changed = true;
 	pthread_mutex_unlock(&loop.input_mutex);
 }
 static void cursor_pos_callback(GLFWwindow *window_ptr, double xpos, double ypos) {
 	assert_s(window.glfw_ptr == window_ptr && "[cursor_pos_callback] window_ptr unrecognised");
 	pthread_mutex_lock(&loop.input_mutex);
-	window.cursor_pos = (uvec2){{ (uint32_t)xpos, (uint32_t)ypos }};
-	window.cursor_changed = true;
+	cursor.pos_window = (uvec2){{ (uint32_t)xpos, (uint32_t)ypos }};
+	cursor.changed = true;
+	pthread_mutex_unlock(&loop.input_mutex);
+}
+static void mouse_button_callback(GLFWwindow *window_ptr, int button, int action, int mods) {
+	assert_s(window.glfw_ptr == window_ptr && "[mouse_button_callback] window_ptr unrecognised");
+	pthread_mutex_lock(&loop.input_mutex);
+	buf_push(window.mousebutton_events_current, (input_event_t) { button, action, mods });
 	pthread_mutex_unlock(&loop.input_mutex);
 }
 static void scroll_callback(GLFWwindow *window_ptr, double xoffset, double yoffset) {
@@ -71,8 +84,7 @@ static void key_callback(GLFWwindow *window_ptr, int key, int scancode, int acti
 	(void)scancode;
 	assert_s(window.glfw_ptr == window_ptr && "[key_callback] window_ptr unrecognised");
 	pthread_mutex_lock(&loop.input_mutex);
-	if (action == GLFW_PRESS)
-		buf_push(window.key_events, (key_event_t){ key, mods });
+	buf_push(window.key_events_current, (input_event_t){ key, action, mods });
 	pthread_mutex_unlock(&loop.input_mutex);
 }
 
@@ -102,6 +114,7 @@ int window_init(uvec2 dims, const char *title) {
 	glfwSetFramebufferSizeCallback(window.glfw_ptr, framebuffer_size_callback);
 	glfwSetCursorEnterCallback(window.glfw_ptr, cursor_enter_callback);
 	glfwSetCursorPosCallback(window.glfw_ptr, cursor_pos_callback);
+	glfwSetMouseButtonCallback(window.glfw_ptr, mouse_button_callback);
 	glfwSetScrollCallback(window.glfw_ptr, scroll_callback);
 	glfwSetKeyCallback(window.glfw_ptr, key_callback);
 
@@ -137,7 +150,10 @@ void window_deinit(void) {
 	pthread_mutex_destroy(&loop.close_mutex);
 	pthread_mutex_destroy(&loop.input_mutex);
 
-	buf_free(window.key_events);
+	buf_free(window.key_events_current);
+	buf_free(window.key_events_last);
+	buf_free(window.mousebutton_events_current);
+	buf_free(window.mousebutton_events_last);
 }
 
 static void *loop_function(void *args) {
@@ -162,17 +178,26 @@ static void *loop_function(void *args) {
 				if (window.resized) {
 					window.resized = false;
 					renderer_resize(window.dims, window.scale);
+					cursor.changed = true;
 				}
-				if (window.cursor_changed) {
-					window.cursor_changed = false;
-					renderer_cursor_pos_update(window.cursor_pos, window.cursor_in_window);
+				if (cursor.changed) {
+					cursor.changed = false;
+					cursor.in_grid = false;
+					if (cursor.in_window) {
+						const fvec2 pos_screen = renderer_window_to_screen_coords(cursor.pos_window);
+						if (renderer_screen_coords_in_grid(pos_screen)) {
+							cursor.pos_grid = renderer_screen_to_grid_coords(pos_screen);
+							cursor.in_grid = true;
+						}
+					}
 				}
-				for_buf(i, window.key_events)
-					dbgout("%x/%x", window.key_events[i].key, window.key_events[i].mods);
-				buf_clear(window.key_events);
+				SWAP(window.key_events_current, window.key_events_last);
+				buf_clear(window.key_events_current);
+				SWAP(window.mousebutton_events_current, window.mousebutton_events_last);
+				buf_clear(window.mousebutton_events_current);
 				pthread_mutex_unlock(&loop.input_mutex);
 
-				window_functions->tick();
+				window_functions->tick(window.key_events_last, window.mousebutton_events_last);
 			} while (tick_time_passed >= TARGET_SPT);
 
 			// Frame
@@ -225,4 +250,14 @@ void window_loop(const window_functions_t *window_functions) {
 	dbgout("loop thread finished, returning %p", thread_ret);
 
 	glfwMakeContextCurrent(window.glfw_ptr);
+}
+
+void window_close(void) {
+	glfwSetWindowShouldClose(window.glfw_ptr, GL_TRUE);
+}
+bool window_cursor_in_grid(void) {
+	return cursor.in_grid;
+}
+uvec2 window_cursor_pos_grid(void) {
+	return cursor.pos_grid;
 }

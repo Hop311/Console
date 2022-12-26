@@ -14,4 +14,5 @@ typedef struct {
 
 void character_grid_init(character_grid_t *grid, uvec2 dims);
 void character_grid_free(character_grid_t *grid);
+void character_grid_clear(const character_grid_t *grid);
 character_t *character_grid_get(const character_grid_t *grid, uvec2 point);

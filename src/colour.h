@@ -24,4 +24,6 @@
 extern const colour_t COLOURS[COLOUR_COUNT];
 
 uint8_t colour_pack(uint8_t foreground, uint8_t background);
-uint8_t colour_invert(uint8_t col);
+uint8_t colour_foreground(uint8_t colour);
+uint8_t colour_background(uint8_t colour);
+uint8_t colour_invert(uint8_t colour);

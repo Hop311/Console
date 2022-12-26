@@ -4,6 +4,8 @@
 #include "memory_s.h"
 #include "logging.h"
 
+#include <string.h>
+
 void character_grid_init(character_grid_t *grid, uvec2 dims) {
 	assert_s(grid && "[character_grid_init] grid == NULL");
 	character_grid_free(grid);
@@ -15,6 +17,10 @@ void character_grid_free(character_grid_t *grid) {
 	assert_s(grid && "[character_grid_free] grid == NULL");
 	free_s(grid->chars);
 	*grid = (character_grid_t){ 0 };
+}
+void character_grid_clear(const character_grid_t *grid) {
+	assert_s(grid && "[character_grid_clear] grid == NULL");
+	if (grid->chars) memset(grid->chars, 0, grid->size * sizeof(character_t));
 }
 character_t *character_grid_get(const character_grid_t *grid, uvec2 point) {
 	assert_s(grid && "[character_grid_get] grid == NULL");
