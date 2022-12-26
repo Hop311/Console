@@ -7,3 +7,6 @@
 [submodule "deps/lodepng"]
 	path = deps/lodepng
 	url = https://github.com/lvandeve/lodepng.git
+[submodule "deps/pthread"]
+	path = deps/pthread
+	url = https://github.com/GerHobbelt/pthread-win32.git

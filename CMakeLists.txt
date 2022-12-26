@@ -44,24 +44,14 @@ endif()
 add_subdirectory(deps/glfw EXCLUDE_FROM_ALL)
 set(glew-cmake_BUILD_SHARED NO)
 add_subdirectory(deps/glew EXCLUDE_FROM_ALL)
+add_subdirectory(deps/pthread EXCLUDE_FROM_ALL)
 
-target_include_directories(Console PRIVATE "dependencies/include/pthread" "deps/lodepng")
-target_link_directories(Console PRIVATE "dependencies/lib")
-target_link_libraries(Console PRIVATE glfw libglew_static pthreadVC3.lib)
+target_link_libraries(Console PRIVATE glfw libglew_static pthreadVC3)
+
+target_include_directories(Console PRIVATE "deps/lodepng")
 set_source_files_properties("deps/lodepng/lodepng.cpp" PROPERTIES
 	LANGUAGE C COMPILE_OPTIONS "/wd4267;/wd4334")
 target_sources(Console PRIVATE "deps/lodepng/lodepng.cpp")
-
-# Copy dlls to build directory
-set(DYNAMIC_LIBS "pthreadVC3.dll")
-foreach(LIB ${DYNAMIC_LIBS})
-	message("Copying ${LIB} to build directory")
-	add_custom_command(
-		OUTPUT ${LIB} DEPENDS "dependencies/bin/${LIB}"
-		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dependencies/bin/${LIB}" .
-		COMMENT "Copying ${LIB} to build directory")
-endforeach()
-target_sources(Console PRIVATE ${DYNAMIC_LIBS})
 
 # Copy resources to build directory
 set(RESOURCES "Alloy_curses_12x12_thicker.png")
@@ -80,4 +70,4 @@ target_sources(Console PRIVATE ${RESOURCES_INCLUDE})
 
 # Extra clean instructions
 set_property(TARGET Console APPEND PROPERTY ADDITIONAL_CLEAN_FILES
-	"${CMAKE_SOURCE_DIR}/shader/include" "res" DYNAMIC_LIBS)
+	"${CMAKE_SOURCE_DIR}/shader/include" "res")
