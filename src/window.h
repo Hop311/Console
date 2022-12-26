@@ -6,14 +6,20 @@
 
 typedef struct {
 	int key, action, mods;
-} input_event_t;
+} key_event_t;
+
+typedef struct {
+	int button, action, mods;
+	ivec2 pos;
+	uvec2 dims;
+} mousebutton_event_t;
 
 extern const int ACTION_PRESS;
 extern const int KEY_ESCAPE;
 extern const int MOUSEBUTTON_LEFT;
 
 typedef struct {
-	void (*tick)(const input_event_t *key_events, const input_event_t *mousebutton_events);
+	void (*tick)(const key_event_t *key_events, const mousebutton_event_t *mousebutton_events);
 	void (*render)(void);
 } window_functions_t;
 

@@ -3,5 +3,6 @@
 .vscode/
 out/
 build/
+cmake-build/
 shader/include/
 *.zip

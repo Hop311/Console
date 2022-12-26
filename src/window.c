@@ -28,10 +28,12 @@ static struct {
 	uvec2 dims;
 	float scale;
 	bool resized;
-	input_event_t *key_events_current, *key_events_last, *mousebutton_events_current, *mousebutton_events_last;
+	key_event_t *key_events_current, *key_events_last;
+	mousebutton_event_t *mousebutton_events_current, *mousebutton_events_last;
 } window = { 0 };
 static struct {
-	uvec2 pos_window, pos_grid;
+	ivec2 pos_window;
+	uvec2 pos_grid;
 	bool in_window, in_grid, changed;
 } cursor = { 0 };
 
@@ -62,14 +64,14 @@ static void cursor_enter_callback(GLFWwindow *window_ptr, int entered) {
 static void cursor_pos_callback(GLFWwindow *window_ptr, double xpos, double ypos) {
 	assert_s(window.glfw_ptr == window_ptr && "[cursor_pos_callback] window_ptr unrecognised");
 	pthread_mutex_lock(&loop.input_mutex);
-	cursor.pos_window = (uvec2){{ (uint32_t)xpos, (uint32_t)ypos }};
+	cursor.pos_window = (ivec2){{ (int32_t)xpos, (int32_t)ypos }};
 	cursor.changed = true;
 	pthread_mutex_unlock(&loop.input_mutex);
 }
 static void mouse_button_callback(GLFWwindow *window_ptr, int button, int action, int mods) {
 	assert_s(window.glfw_ptr == window_ptr && "[mouse_button_callback] window_ptr unrecognised");
 	pthread_mutex_lock(&loop.input_mutex);
-	buf_push(window.mousebutton_events_current, (input_event_t) { button, action, mods });
+	buf_push(window.mousebutton_events_current, (mousebutton_event_t) { button, action, mods, cursor.pos_window, window.dims });
 	pthread_mutex_unlock(&loop.input_mutex);
 }
 static void scroll_callback(GLFWwindow *window_ptr, double xoffset, double yoffset) {
@@ -84,7 +86,7 @@ static void key_callback(GLFWwindow *window_ptr, int key, int scancode, int acti
 	(void)scancode;
 	assert_s(window.glfw_ptr == window_ptr && "[key_callback] window_ptr unrecognised");
 	pthread_mutex_lock(&loop.input_mutex);
-	buf_push(window.key_events_current, (input_event_t){ key, action, mods });
+	buf_push(window.key_events_current, (key_event_t){ key, action, mods });
 	pthread_mutex_unlock(&loop.input_mutex);
 }
 
@@ -182,15 +184,9 @@ static void *loop_function(void *args) {
 				}
 				if (cursor.changed) {
 					cursor.changed = false;
-					cursor.in_grid = false;
-					if (cursor.in_window) {
-						const fvec2 pos_screen = renderer_window_to_screen_coords(cursor.pos_window);
-						if (renderer_screen_coords_in_grid(pos_screen)) {
-							cursor.pos_grid = renderer_screen_to_grid_coords(pos_screen);
-							cursor.in_grid = true;
-						}
-					}
+					renderer_cursor_pos_update(cursor.pos_window, cursor.in_window, &cursor.pos_grid, &cursor.in_grid);
 				}
+
 				SWAP(window.key_events_current, window.key_events_last);
 				buf_clear(window.key_events_current);
 				SWAP(window.mousebutton_events_current, window.mousebutton_events_last);

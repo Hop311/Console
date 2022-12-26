@@ -7,6 +7,8 @@
 #include "colour.h"
 #include "renderer.h"
 
+#include <inttypes.h>
+
 static const uvec2 INITIAL_DIMS = {{ 800, 600 }};
 
 static struct {
@@ -15,20 +17,20 @@ static struct {
 	uvec2 *drawn;
 } cursor = { 0 };
 
-void tick(const input_event_t *key_events, const input_event_t *mousebutton_events) {
+void tick(const key_event_t *key_events, const mousebutton_event_t *mousebutton_events) {
 
 	for_buf(i, key_events) {
-		input_event_t ke = key_events[i];
-		dbgout("key event: %x/%x/%x", ke.key, ke.action, ke.mods);
+		key_event_t ke = key_events[i];
+		dbgout("key event %zu: %x/%x/%x", i, ke.key, ke.action, ke.mods);
 		if (ke.key == KEY_ESCAPE && ke.action == ACTION_PRESS) window_close();
 	}
 
 	static bool pressed = false;
 
 	for_buf(i, mousebutton_events) {
-		input_event_t me = mousebutton_events[i];
-		dbgout("mouse event: %x/%x/%x", me.key, me.action, me.mods);
-		if (me.key == MOUSEBUTTON_LEFT) pressed = me.action == ACTION_PRESS;
+		mousebutton_event_t me = mousebutton_events[i];
+		dbgout("mouse event %zu: %x/%x/%x (%"PRIi32", %"PRIi32")/(%"PRIu32", %"PRIu32")", i, me.button, me.action, me.mods, me.pos.x, me.pos.y, me.dims.x, me.dims.y);
+		if (me.button == MOUSEBUTTON_LEFT) pressed = me.action == ACTION_PRESS;
 	}
 
 	cursor.in_grid = window_cursor_in_grid();
@@ -51,7 +53,7 @@ void render(void) {
 	}
 	if (cursor.in_grid) {
 		character_t *c = character_grid_get(grid, cursor.pos);
-		if (c == NULL) errout("invalid cursor position: (%u, %u)", cursor.pos.x, cursor.pos.y);
+		if (c == NULL) errout("invalid cursor position: (%"PRIu32", %"PRIu32")", cursor.pos.x, cursor.pos.y);
 		else c->colour = colour_pack(colour_foreground(c->colour), BROWN);
 	}
 }

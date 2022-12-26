@@ -49,7 +49,7 @@ int renderer_init(void) {
 	unsigned width, height;
 	int ret = lodepng_decode_file(&image, &width, &height, CHARSHEET, LCT_PALETTE, 8);
 	if (ret) {
-		errout("failed to load %s with lodepng error %u: %s", CHARSHEET, ret, lodepng_error_text(ret));
+		errout("failed to load %s with lodepng error %d: %s", CHARSHEET, ret, lodepng_error_text(ret));
 		return -1;
 	}
 	if (width == 0 || height == 0 || width & 15 || height & 15) {
@@ -125,15 +125,28 @@ const character_grid_t *renderer_grid(void) {
 	return (const character_grid_t *)&grid;
 }
 
-fvec2 renderer_window_to_screen_coords(uvec2 window_coords) {
+static fvec2 window_to_screen_coords(ivec2 window_coords) {
 	return (fvec2){{ (float)window_coords.x / (float)window.dims.width * 2.0f - 1.0f,
 		(float)window_coords.y / (float)window.dims.height * 2.0f - 1.0f }};
 }
-uvec2 renderer_screen_to_grid_coords(fvec2 screen_coords) {
+static uvec2 screen_to_grid_coords(fvec2 screen_coords) {
 	return (uvec2) {{ (uint32_t)((screen_coords.x - screen.top_left.x) / screen.char_dims.width),
 		(uint32_t)((float)grid.dims.height - (screen.top_left.y - screen_coords.y) / screen.char_dims.height) }};
 }
-bool renderer_screen_coords_in_grid(fvec2 screen_coords) {
+static bool screen_coords_in_grid(fvec2 screen_coords) {
 	return screen_coords.x >= screen.top_left.x && screen_coords.y <= screen.top_left.y &&
 		screen_coords.x <= -screen.top_left.x && screen_coords.y >= -screen.top_left.y;
+}
+void renderer_cursor_pos_update(ivec2 pos_window, bool in_window, uvec2 *pos_grid, bool *in_grid) {
+	assert_s(pos_grid && "[renderer_cursor_pos_update] pos_grid == NULL");
+	assert_s(in_grid && "[renderer_cursor_pos_update] in_grid == NULL");
+	if (in_window) {
+		const fvec2 pos_screen = window_to_screen_coords(pos_window);
+		if (screen_coords_in_grid(pos_screen)) {
+			*pos_grid = screen_to_grid_coords(pos_screen);
+			*in_grid = true;
+			return;
+		}
+	}
+	*in_grid = false;
 }
