@@ -6,7 +6,6 @@
 #include "renderer.h"
 #include "maths.h"
 
-#define GLFW_DLL
 #include <GLFW/glfw3.h>
 #include <pthread.h>
 

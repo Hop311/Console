@@ -1,16 +1,7 @@
 ﻿
 cmake_minimum_required(VERSION 3.15)
 
-project("Console")
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED True)
-
-if(MSVC)
-	add_compile_options("/W4" "$<$<CONFIG:RELEASE>:/O2>")
-else()
-	add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
-endif()
+project(Console)
 
 # Add sources
 set(SRC "src/main.c" "src/window.c" "src/renderer.c" "src/logging.c" "src/memory_s.c"
@@ -40,18 +31,26 @@ foreach(SHADER ${SHADERS})
 	LIST(APPEND SHADERS_INCLUDE ${OUTPUT_FILEPATH})
 endforeach()
 
-# Create exe
+# Create exe with compilation instructions
 add_executable(Console ${SRC} ${SHADERS_INCLUDE})
+set_target_properties(Console PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED True)
+if(MSVC)
+	target_compile_options(Console PRIVATE "/W4" "$<$<CONFIG:RELEASE>:/O2>")
+else()
+	target_compile_options(Console PRIVATE "-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
+endif()
 
 # Add dependencies
+add_subdirectory(deps/glfw EXCLUDE_FROM_ALL)
+
 target_include_directories(Console PRIVATE "dependencies/include"
 	"dependencies/include/pthread" "dependencies/include/lodepng")
 target_link_directories(Console PRIVATE "dependencies/lib")
-target_link_libraries(Console opengl32.lib glfw3dll.lib glew32.lib pthreadVC3.lib)
+target_link_libraries(Console PRIVATE glfw opengl32.lib glew32.lib pthreadVC3.lib)
 target_sources(Console PRIVATE "dependencies/include/lodepng/lodepng.c")
 
 # Copy dlls to build directory
-set(DYNAMIC_LIBS "glfw3.dll" "glew32.dll" "pthreadVC3.dll")
+set(DYNAMIC_LIBS "glew32.dll" "pthreadVC3.dll")
 foreach(LIB ${DYNAMIC_LIBS})
 	message("Copying ${LIB} to build directory")
 	add_custom_command(
@@ -77,5 +76,5 @@ endforeach()
 target_sources(Console PRIVATE ${RESOURCES_INCLUDE})
 
 # Extra clean instructions
-set_property( TARGET Console APPEND PROPERTY ADDITIONAL_CLEAN_FILES
+set_property(TARGET Console APPEND PROPERTY ADDITIONAL_CLEAN_FILES
 	"${CMAKE_SOURCE_DIR}/shader/include" "res" DYNAMIC_LIBS)
