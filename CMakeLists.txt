@@ -1,5 +1,5 @@
 ﻿
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.20)
 
 project(Console)
 
@@ -35,20 +35,22 @@ endforeach()
 add_executable(Console ${SRC} ${SHADERS_INCLUDE})
 set_target_properties(Console PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED True)
 if(MSVC)
-	target_compile_options(Console PRIVATE "/W4" "$<$<CONFIG:RELEASE>:/O2>")
+	target_compile_options(Console PRIVATE "/W4;/WX;$<$<CONFIG:RELEASE>:/O2>")
 else()
-	target_compile_options(Console PRIVATE "-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
+	target_compile_options(Console PRIVATE "-Wall;-Wextra;-Werror;$<$<CONFIG:RELEASE>:-O3>")
 endif()
 
 # Add dependencies
 add_subdirectory(deps/glfw EXCLUDE_FROM_ALL)
+set(glew-cmake_BUILD_SHARED NO)
 add_subdirectory(deps/glew EXCLUDE_FROM_ALL)
 
-target_include_directories(Console PRIVATE "dependencies/include"
-	"dependencies/include/pthread" "dependencies/include/lodepng")
+target_include_directories(Console PRIVATE "dependencies/include/pthread" "deps/lodepng")
 target_link_directories(Console PRIVATE "dependencies/lib")
 target_link_libraries(Console PRIVATE glfw libglew_static pthreadVC3.lib)
-target_sources(Console PRIVATE "dependencies/include/lodepng/lodepng.c")
+set_source_files_properties("deps/lodepng/lodepng.cpp" PROPERTIES
+	LANGUAGE C COMPILE_OPTIONS "/wd4267;/wd4334")
+target_sources(Console PRIVATE "deps/lodepng/lodepng.cpp")
 
 # Copy dlls to build directory
 set(DYNAMIC_LIBS "pthreadVC3.dll")
