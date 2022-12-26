@@ -42,15 +42,16 @@ endif()
 
 # Add dependencies
 add_subdirectory(deps/glfw EXCLUDE_FROM_ALL)
+add_subdirectory(deps/glew EXCLUDE_FROM_ALL)
 
 target_include_directories(Console PRIVATE "dependencies/include"
 	"dependencies/include/pthread" "dependencies/include/lodepng")
 target_link_directories(Console PRIVATE "dependencies/lib")
-target_link_libraries(Console PRIVATE glfw opengl32.lib glew32.lib pthreadVC3.lib)
+target_link_libraries(Console PRIVATE glfw libglew_static pthreadVC3.lib)
 target_sources(Console PRIVATE "dependencies/include/lodepng/lodepng.c")
 
 # Copy dlls to build directory
-set(DYNAMIC_LIBS "glew32.dll" "pthreadVC3.dll")
+set(DYNAMIC_LIBS "pthreadVC3.dll")
 foreach(LIB ${DYNAMIC_LIBS})
 	message("Copying ${LIB} to build directory")
 	add_custom_command(
