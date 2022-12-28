@@ -69,7 +69,7 @@ int load_shader(GLenum shader_type, GLuint *shader, const char *source) {
 	glGetShaderiv(shader_id, GL_COMPILE_STATUS, &success);
 	glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &info_log_length);
 	if (info_log_length > 0) {
-		char *const info_log = malloc_s(info_log_length);
+		char *const info_log = calloc_s(info_log_length + 1);
 		glGetShaderInfoLog(shader_id, info_log_length, NULL, info_log);
 		warnout("%s shader info log (length %d):\n\n%s", shader_type_name(shader_type), info_log_length, info_log);
 		free_s(info_log);
@@ -104,7 +104,7 @@ int load_program(GLuint *program, const char *vertex_shader, const char *geometr
 	int info_log_length = 0;
 	glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &info_log_length);
 	if (info_log_length > 0) {
-		char *const info_log = malloc_s(info_log_length);
+		char *const info_log = calloc_s(info_log_length + 1);
 		glGetProgramInfoLog(program_id, info_log_length, NULL, info_log);
 		warnout("program info log (length %d):\n\n%s", info_log_length, info_log);
 		free_s(info_log);
